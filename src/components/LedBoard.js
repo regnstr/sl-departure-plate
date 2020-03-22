@@ -2,6 +2,10 @@ import React, { useEffect, useReducer } from 'react';
 
 import Led from './Led';
 
+import _ from 'lodash';
+
+const URL = 'http://185.242.230.19:5001';
+
 function toggleLed(array, i) {
   let newPower = Array.from(array);
   newPower[i] = !newPower[i];
@@ -16,14 +20,24 @@ function setPowered(array, i) {
 
 
 function reducer(state, action) {
+  let newToggled;
+  let newPower;
   switch (action.type){
+    
     case 'toggle':
-      return { ...state, power: toggleLed(state.power, action.payload)}
+      //return { ...state, power: toggleLed(state.power, action.payload)};
+      newToggled = Array.from(state.toggled);
+      newToggled[action.payload] = !state.toggled[action.payload];
+      newPower = _.zipWith(newToggled, state.basePower, (a, b) => (a != b));
+      return { ...state, toggled: newToggled, power: newPower };
     case 'tick':
-      return { ...state, power: toggleLed(state.power, state.lit)}
+      return { ...state, power: toggleLed(state.power, state.lit)};
     case 'increment':
       let newLit = state.lit +1;
-      return { ...state, lit: newLit}
+      return { ...state, lit: newLit};
+    case 'set-data':
+      newPower = _.zipWith(state.toggled, action.payload, (a, b) => (a != b));
+      return { ...state, basePower: action.payload, power: newPower };
     }
   }
 
@@ -31,7 +45,9 @@ function init(numberOfLeds) {
   let powerArray = Array(numberOfLeds).fill(false);
   return {
     lit: 0,
-    power: powerArray
+    power: powerArray,
+    basePower: powerArray,
+    toggled: powerArray
   };
 }
 
@@ -44,10 +60,28 @@ function LedBoard(props) {
   useEffect(() => {
 
     const timer = setInterval(() => {
-      dispatch({type: 'tick'});
-      dispatch({type: 'increment'});
+      //dispatch({type: 'tick'});
+      //dispatch({type: 'increment'});
     }, 1000);
     
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fetch data
+  useEffect(() => {
+
+    async function fetchFunction() {
+      let response = await fetch(URL);
+      let data = response.json();
+      return data;
+    }
+
+    const timer = setInterval(() => {
+      fetchFunction().then(data => {
+      dispatch({type: 'set-data', payload: data});
+    });
+    }, 1000);
+
     return () => clearInterval(timer);
   }, []);
 

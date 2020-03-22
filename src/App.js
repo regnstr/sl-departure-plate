@@ -48,7 +48,7 @@ class App extends Component {
 function App() {
   return (
     <div>
-      <LedBoard count={5000}/>
+      <LedBoard count={1000}/>
     </div>
   );
 }
