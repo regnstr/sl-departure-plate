@@ -1,0 +1,16 @@
+.circle {
+	float: left;
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	margin: 1px;
+}
+
+.active {
+	background: red;
+	box-shadow: 0 0 10px 0px #d00;
+}
+
+.inactive {
+	background: #440000;
+}
