@@ -5,6 +5,33 @@ import Led from './Led';
 import _ from 'lodash';
 
 const URL = 'http://185.242.230.19:5001';
+//const URL = 'http://localhost:5001';
+
+
+async function toggleRemote(url = '', index) {
+  let response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({index: index})
+  });
+  return response.json();
+}
+
+
+
+
+async function fetchLedState() {
+  let response = await fetch(URL);
+  let data = response.json();
+  return data;
+}
+
+
+
+
+
 
 function toggleLed(array, i) {
   let newPower = Array.from(array);
@@ -28,7 +55,7 @@ function reducer(state, action) {
       //return { ...state, power: toggleLed(state.power, action.payload)};
       newToggled = Array.from(state.toggled);
       newToggled[action.payload] = !state.toggled[action.payload];
-      newPower = _.zipWith(newToggled, state.basePower, (a, b) => (a != b));
+      newPower = _.zipWith(newToggled, state.basePower, (a, b) => (a !== b));
       return { ...state, toggled: newToggled, power: newPower };
     case 'tick':
       return { ...state, power: toggleLed(state.power, state.lit)};
@@ -36,7 +63,7 @@ function reducer(state, action) {
       let newLit = state.lit +1;
       return { ...state, lit: newLit};
     case 'set-data':
-      newPower = _.zipWith(state.toggled, action.payload, (a, b) => (a != b));
+      newPower = _.zipWith(state.toggled, action.payload, (a, b) => (a !== b));
       return { ...state, basePower: action.payload, power: newPower };
     }
   }
@@ -70,14 +97,8 @@ function LedBoard(props) {
   // Fetch data
   useEffect(() => {
 
-    async function fetchFunction() {
-      let response = await fetch(URL);
-      let data = response.json();
-      return data;
-    }
-
     const timer = setInterval(() => {
-      fetchFunction().then(data => {
+      fetchLedState().then(data => {
       dispatch({type: 'set-data', payload: data});
     });
     }, 1000);
@@ -89,8 +110,16 @@ function LedBoard(props) {
     <>
       {
         state.power.map((powered, index) =>
-            <Led powered={powered} key={index} onClick={() => dispatch({type: 'toggle', payload: index})} />
-          )
+          <Led powered={powered} key={index} onClick={(e) => {
+            e.preventDefault();
+            toggleRemote(URL, index).then(data => {
+              dispatch({type: 'set-data', payload: data});
+            }).catch(err => {
+              console.log(err)
+            });
+            //dispatch({type: 'toggle', payload: index});
+          }} />
+        )
       }
     </>
   );
